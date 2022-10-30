@@ -150,6 +150,119 @@ int main()
       //cout << "x = " << x << " one over = " << (1.0 / x) << endl;
       //Dir = normalize(Dir);
 
+  //check all spheres for interceptions
+  //leave as initial value if not hit
+
+  //if ionitila value make backgorund colour
+  //else check if its refleective
+
+  //if not, get shading and be good
+  double initial = -1; //index of sphere collision, if -1 means no collisions
+  double distance = 2147483647; //find closest hit
+  Coord Hit;
+
+  //check distance of collision for all spheres
+  for (int i = 0; i < spheres.size(); i++)
+  {
+    Hit = ray_hit(Or, Dir, spheres[i]);
+
+    //if smaller than previous distance ray hits this sphere first
+    if (Hit.exists && Hit.dist < distance)
+    {
+      distance = Hit.dist;
+      initial = i;
+    }
+  }
+
+  //check if no collisions occured (index is still default), set backround
+  if (initial == -1)
+  {
+    r = backr;
+    g = backg;
+    b = backg;
+  }
+  else //get info on first sphere collision
+  {
+    //if not reflective, shade it, check for shadows
+    if (! spheres[initial].is_reflective)
+    {
+      //get ray hit for closest one sphere to work off of
+      Coord Collision = ray_hit(Or, Dir, spheres[initial]);
+
+      //set rgb to colour of sphere to work with
+      r = spheres[initial].r;
+      g = spheres[initial].g;
+      b = spheres[initial].b;
+
+      //get vector from sphere collision to light for intensity and shadows
+      Coord Towards_light;
+
+      Towards_light.x = Li1.x - Collision.x;
+      Towards_light.y = Li1.y - Collision.y;
+      Towards_light.z = Li1.z - Collision.z;
+
+      bool shade = true; //shade, unless otherwise directed by shadows
+
+      //check for shadows based off of towards light vector
+      for (int i = 0; i < spheres.size(); i++)
+      {
+        //check if ray collides with any other sphere on the way towards the light
+        if (i != initial)
+        {
+          if (ray_hit(Collision, Towards_light, spheres[i]).exists)
+          {
+            //if so, reduce the brightness
+            r *= 0.3;
+            g *= 0.3;
+            b *= 0.3;
+            shade = false;
+            break;
+          }
+        }
+      }
+
+      if (shade == true)
+      {
+        //get sphere normal, from centre to collision
+        Coord Normal;
+
+        Normal.x = Collision.x - spheres[initial].x;
+        Normal.y = Collision.y - spheres[initial].y;
+        Normal.z = Collision.z - spheres[initial].z;
+
+        //light to collision vector, sphere normal (from middle to collision), is reflective and is floor
+        double brightness = intensity(Towards_light, Normal, spheres[initial].is_reflective, spheres[initial].floor);
+
+        //apply brightness based on shading to sphere
+        r *= brightness;
+        g *= brightness;
+        b *= brightness;
+      }
+    } //not reflective close
+    else
+    {
+      r = backr;
+      g = backg;
+      b = backb;
+    }
+  } //does collide with sphere close
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
+
       //spheres cannot be more than 2 147 483 647 units away otherwise it wont work
       double distance = 2147483647;
       double index = 0;
@@ -371,7 +484,7 @@ int main()
         g *= brightness;
         b *= brightness;
       
-      }
+      }*/
       
       //colour definitions
       //get RGB values for each pixel, as int to fit file format
