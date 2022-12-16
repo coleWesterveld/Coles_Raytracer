@@ -51,8 +51,8 @@ int main()
   ofstream image("image.ppm");
   
   //image dimensions
-  int image_height = 256;//1080;//256;
-  int image_width = 480;//1920;//480;
+  int image_height = 1080;//1080;//256;
+  int image_width = 1920;//1920;//480;
 
   //list of spheres
   vector<Sphere> spheres;
@@ -67,14 +67,14 @@ int main()
   // Sphere Sp3 = {1560, 540, 11100, 360, false, 0, 1, 0};
   // spheres.push_back(Sp3);
 
-  //Sphere Sp1 = {0, 2000000, 0, 7000000, false, 0.4, 0.4, 0.4, true, 0};
-  //spheres.push_back(Sp1);
+  Sphere Sp1 = {0, 2000000, 0, 7000000, false, 0.4, 0.4, 0.4, true, 0};
+  spheres.push_back(Sp1);
   Sphere Sp2 = {0, 250, 900, 400, true, 1, 1, 0, false, 0};
   spheres.push_back(Sp2);
-  //Sphere Sp3 = {-150, 540, 400, 60, false, 1, 1, 0, false, 0};
-  //spheres.push_back(Sp3);
-  //Sphere Sp4 = {250, 440, 400, 100, false, 0, 1, 1, false, 0};
-  //spheres.push_back(Sp4);
+  Sphere Sp3 = {-150, 540, 400, 60, false, 1, 1, 0, false, 0};
+  spheres.push_back(Sp3);
+  Sphere Sp4 = {250, 440, 400, 100, false, 0, 1, 1, false, 0};
+  spheres.push_back(Sp4);
   Sphere Sp5 = {-450, 340, 500, 200, false, 1, 0, 1, false, 0};
   spheres.push_back(Sp5);
   Sphere Sp6 = {450, 340, 500, 150, false, 0.5, 0.5, 1, false, 0};
@@ -92,7 +92,7 @@ int main()
   //followes quadrant system where straight is 0
   //from 0-1 where 1 is 90 degrees
   double angle_x = 0;
-  double angle_y = 0;
+  double angle_y = -0.2;
   //for 1080p
   // Sphere Sp1 = {1000, 500, 700, 375, 1, 0, 1};
   // spheres.push_back(Sp1);
@@ -114,7 +114,7 @@ int main()
 
 
   //maximum reflections per ray
-  int reflect_max = 5;
+  int REFLECT_MAX = 5;
   
   //ppm file formatting
   image << "P3" << endl;
@@ -130,9 +130,9 @@ int main()
       //int y = 255;
       // //default or backround colours
       // //replace 0.5 with commented code for a gradient
-      float backr = 0.5;//double(x) / (image_height - 1);
-      float backg = 0.5;//double(y) / (image_height - 1);
-      float backb = 0.5;
+      float backr = 0.63;//double(x) / (image_height - 1);
+      float backg = 0.63;//double(y) / (image_height - 1);
+      float backb = 0.63;
       
       float r = backr;
       float g = backg;
@@ -144,17 +144,12 @@ int main()
       //define origin and direction of each ray from each pixel
       Coord Or = {origin_x, origin_y, origin_z, true};
       Coord Dir = {(-(width / 2.0) + x * (width / image_width) + angle_x), (0.5 - (y * (1.0 / image_height)) - angle_y), 1.0, true};
-   
-      //cout << Dir.x << "," << Dir.y << ", " << Dir.z << endl;
-      //cout << x << "    " << ((-(width / 2.0)) + x * (width / image_width)) << endl;
-      //cout << "x = " << x << " one over = " << (1.0 / x) << endl;
-      //Dir = normalize(Dir);
 
   //check all spheres for interceptions
   //leave as initial value if not hit
 
-  //if ionitila value make backgorund colour
-  //else check if its refleective
+  //if initial value make backgorund colour
+  //else check if its reflective
 
   //if not, get shading and be good
   double initial = -1; //index of sphere collision, if -1 means no collisions
@@ -183,11 +178,12 @@ int main()
   }
   else //get info on first sphere collision
   {
+    //get ray hit for closest one sphere to work off of
+    Coord Collision = ray_hit(Or, Dir, spheres[initial]);
+
     //if not reflective, shade it, check for shadows
     if (! spheres[initial].is_reflective)
     {
-      //get ray hit for closest one sphere to work off of
-      Coord Collision = ray_hit(Or, Dir, spheres[initial]);
 
       //set rgb to colour of sphere to work with
       r = spheres[initial].r;
@@ -221,7 +217,7 @@ int main()
         }
       }
 
-      if (shade == true)
+      if (shade == true)//no casted shadow
       {
         //get sphere normal, from centre to collision
         Coord Normal;
@@ -238,253 +234,145 @@ int main()
         g *= brightness;
         b *= brightness;
       }
+      else //casted shadow
+      {
+        r *= 0.3;
+        g *= 0.3;
+        b *= 0.3;
+      }
+
     } //not reflective close
     else
     {
-      r = backr;
-      g = backg;
-      b = backb;
-    }
+      //if reflective, reflect one ray around
+      if (spheres[initial].diffusion == 0)
+      {
+        
+        //reflect around a maximum of REFLECT_MAX times
+        for (int i = 0; i < REFLECT_MAX; i++)
+        {
+          //reflect initial ray
+          Coord Reflected_dir = reflect(Or, Dir, spheres[initial]);
+
+          double reflect_hit = -1; //index of sphere collision, if -1 means no collisions
+          distance = 2147483647; //find closest hit
+          Coord Reflect_check;
+
+          //check distance of collision for all spheres
+          for (int i = 0; i < spheres.size(); i++)
+          {
+            if (i != initial)
+            {
+              Reflect_check = ray_hit(Collision, Reflected_dir, spheres[i]);
+            
+
+              //if smaller than previous distance ray hits this sphere first
+              if (Reflect_check.exists && Reflect_check.dist < distance)
+              {
+                distance = Reflect_check.dist;
+                reflect_hit = i;
+              }
+            }
+          }
+
+          //if no reflection, reflect backround colour and break
+          if (reflect_hit == -1)
+          {
+            double 
+            r = backr;
+            g = backg;
+            b = backb;
+            break;
+          }
+          else //does hit something
+          {
+            //reflected collision to work off of 
+            Coord Reflected = ray_hit(Collision, Reflected_dir, spheres[reflect_hit]);
+
+            if (spheres[reflect_hit].is_reflective)//hits reflective
+            {
+              r=0;g=0;b=0;
+              initial = reflect_hit;
+              Dir = Reflected_dir;
+              Or = Collision;
+            }
+            else //hits non reflective
+            {
+              r = spheres[reflect_hit].r;
+              g = spheres[reflect_hit].g;
+              b = spheres[reflect_hit].b;
+
+              //get vector from sphere collision to light for intensity and shadows
+              Coord Towards_light;
+
+              Towards_light.x = Li1.x - Reflected.x;
+              Towards_light.y = Li1.y - Reflected.y;
+              Towards_light.z = Li1.z - Reflected.z;
+
+              // check if something is casting a shadow
+              bool shadow = false;
+              for (int i = 0; i < spheres.size(); i++)
+              {
+                if (i != reflect_hit && ray_hit(Reflected, Towards_light, spheres[i]).exists)
+                {
+                  shadow = true;
+                  break;
+                }
+
+              }
+
+              if (shadow == false)
+              {
+                //get sphere normal, from centre to collision
+                Coord Normal;
+
+                Normal.x = Reflected.x - spheres[reflect_hit].x;
+                Normal.y = Reflected.y - spheres[reflect_hit].y;
+                Normal.z = Reflected.z - spheres[reflect_hit].z;
+
+                //shade reflected sphere
+                double brightness = intensity(Towards_light, Normal, false, spheres[reflect_hit].floor);
+                r *= brightness;
+                g *= brightness;
+                b *= brightness;
+              }
+              else
+              {
+                //darken if shadows
+                r *= 0.3;
+                g *= 0.3;
+                b *= 0.3;
+              }
+            }
+          }
+
+
+        } //max reflections close
+      } //no diffusion check close
+
+      //shading reflective sphere
+      Coord Reflective_normal;
+
+      Reflective_normal.x = Collision.x - spheres[initial].x;
+      Reflective_normal.y = Collision.y - spheres[initial].y;
+      Reflective_normal.z = Collision.z - spheres[initial].z;
+
+      Coord Towards_light_reflective;
+
+      Towards_light_reflective.x = Li1.x - Collision.x;
+      Towards_light_reflective.y = Li1.y - Collision.y;
+      Towards_light_reflective.z = Li1.z - Collision.z;
+
+      double reflected_brightness = intensity(Towards_light_reflective, Reflective_normal, true, spheres[initial].floor);
+
+      r *= reflected_brightness;
+      g *= reflected_brightness;
+      b *= reflected_brightness;
+
+    } //reflective close
+
   } //does collide with sphere close
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-
-      //spheres cannot be more than 2 147 483 647 units away otherwise it wont work
-      double distance = 2147483647;
-      double index = 0;
-      Coord Hit;
-
-      //check distances of all spheres, get closest one that ray hits first
-      for (int h = 0; h < spheres.size(); h++)
-      {
-        Hit = ray_hit(Or, Dir, spheres[h]);
-        //cout << spheres[h].r << endl;
-        if (Hit.exists)
-        {
-          if (Hit.dist < distance)
-          {
-            distance = Hit.dist;
-            index = h;
-          }
-        }
-      }
-
-      //cast ray on closest sphere
-      Coord Collide = ray_hit(Or, Dir, spheres[index]);
-      
-      if (Collide.exists)
-      {
-        //if (index = 1)
-        //{
-          //cout << Collide.x << ", " << Collide.y << ", " << Collide.z << endl;
-        //}
-        //check for shadows
-        //get direction from sphere hit towards light
-        Coord towards_light;
-        towards_light.x = Li1.x - Collide.x;
-        towards_light.y = Li1.y - Collide.y;
-        towards_light.z = Li1.z - Collide.z;
-      
-      
-        Coord Shadow;
-        bool backround = false;
-
-        //check all spheres except itself for shadows
-        for (int k = 0; k < spheres.size(); k++)
-        {
-          if (k != index)
-          {
-            //check if ray to light collides, casting a shadown on point
-            Shadow = ray_hit(Collide, towards_light, spheres[k]);
-            
-            if (Shadow.exists)
-            {
-               //set black if shadow
-              r = spheres[index].r * 0.3;
-              g = spheres[index].g * 0.3;
-              b = spheres[index].b * 0.3;
-              break;
-            }
-            else if (spheres[index].is_reflective)
-            {
-              
-              //reflection
-              //for (int i = 0; i < reflect_max; i++)
-              //{
-                Coord reflection;
-                Coord reflected_ray = reflect(Or, Dir, spheres[index]);
-                //get reflected vector and detect collsions with any other sphere
-              //   if (spheres[index].diffusion != 0)
-              //   {
-
-              //   distance = 2147483647;
-              //   int diffusion_average = 4;
-              //   Coord diffused_ray = reflected_ray;
-              //   int diffused_index = -1;
-
-              //   //get first ray hit, closest sphere
-              //   //difusion
-              //   for (int i = 0; i < diffusion_average; i++)
-              //   {
-              //     //add random diffusion to reflected vector
-              //     diffused_ray.x = rand() % spheres[index].diffusion + reflected_ray.x;
-              //     diffused_ray.y = rand() % spheres[index].diffusion + reflected_ray.y;
-              //     diffused_ray.z = rand() % spheres[index].diffusion + reflected_ray.z;
-
-              //     for (int m = 0; m < spheres.size(); m++)
-              //     {
-                  
-              //     if (m != index)
-              //     {
-              //       reflection = ray_hit(Collide, diffused_ray, spheres[m]);
-              //       //cout << m << endl;
-              //       if (reflection.exists)
-              //       {
-              //         //cout << "reflection?" << endl;
-              //         if (reflection.dist < distance)
-              //         {
-              //           distance = reflection.dist;
-              //           diffused_index = m;
-
-              //         }
-              //       }
-              //     }
-              //   }
-
-              //   if (diffused_index != -1)
-              //   {
-              //     r += spheres[diffused_index].r;
-              //     g += spheres[diffused_index].r;
-              //     b += spheres[diffused_index].r;
-              //   }
-              //   else
-              //   {
-              //     r += backr;
-              //     g += backr;
-              //     b += backr;
-              //   }
-              // }
-              // r /= diffusion_average;
-              // g /= diffusion_average;
-              // b /= diffusion_average;
-
-
-              //   cout << "diffused" << endl;
-              // }
-              //else
-              //{
-                //cout << "you shouldnt see this" << endl;
-                int reflected_index = -1;
-                distance = 2147483647;
-                  for (int m = 0; m < spheres.size(); m++)
-                  {
-                  
-                  if (m != index)
-                  {
-                    reflection = ray_hit(Collide, reflected_ray, spheres[m]);
-                    //cout << m << endl;
-                    if (reflection.exists)
-                    {
-                      //cout << "reflection?" << endl;
-                      if (reflection.dist < distance)
-                      {
-                        distance = reflection.dist;
-                        reflected_index = m;
-                        
-                      }
-                    }
-                  }
-                  }
-
-                if (reflected_index != -1)
-                {
-                  //cout << "should happen" << endl;
-                  reflection = ray_hit(Collide, reflected_ray, spheres[reflected_index]);
-                }
-                
-
-                //set new origin and direction, set pixel colopur to colour of reflected object
-                if (reflection.exists)
-                {
-                  
-                  //cout << reflection.x << ", " << reflection.y << ", " << reflection.z << endl;
-                  //shade reflected object
-                  //get vector from reflected ray incidence to light
-                 
-                  Coord reflected_shading;
-                  reflected_shading.x = Li1.x - reflection.x;
-                  reflected_shading.y = Li1.y - reflection.y;
-                  reflected_shading.z = Li1.z - reflection.z;
-
-                  //get vector from sphere centre to reflected ray incident point
-                  Coord incident;
-                  incident.x = reflection.x - spheres[reflected_index].x;
-                  incident.y = reflection.y - spheres[reflected_index].y;
-                  incident.z = reflection.z - spheres[reflected_index].z;
-
-                  //get brightness
-                  double reflected_brightness;
-                  reflected_brightness = intensity(reflected_shading, incident, false, spheres[reflected_index].floor);
-
-                  //apply brightness
-                  r = spheres[reflected_index].r * reflected_brightness;
-                  g = spheres[reflected_index].g * reflected_brightness;
-                  b = spheres[reflected_index].b * reflected_brightness;
-                  
-                  Or.x = reflection.x;
-                  Or.y = reflection.y;
-                  Or.z = reflection.z;
-
-                  Dir.x = reflected_ray.x;
-                  Dir.y = reflected_ray.y;
-                  Dir.z = reflected_ray.z;
-                }
-                else
-                {
-                  //if no reflection object is backround colour
-                  r = backr;
-                  g = backg;
-                  b = backg;
-                  backround = true;
-                }
-              //}
-            }
-            else
-            {
-              r = spheres[index].r;
-              g = spheres[index].g;
-              b = spheres[index].b;
-            }
-          }
-        }
-        Coord normal;
-        normal.x = Collide.x - spheres[index].x;
-        normal.y = Collide.y - spheres[index].y;
-        normal.z = Collide.z - spheres[index].z;
-
-        double brightness = intensity(towards_light, normal, spheres[index].is_reflective, spheres[index].floor);
-        
-        //cout << brightness << endl;
-
-        r *= brightness;
-        g *= brightness;
-        b *= brightness;
-      
-      }*/
       
       //colour definitions
       //get RGB values for each pixel, as int to fit file format
