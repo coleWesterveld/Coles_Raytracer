@@ -5,7 +5,7 @@ A sphere raytracer that includes ray casting, object shadows, object shading and
 
 still to do - refraction, antialiasing, perspective, variable reflectivity
 fix some issues with objects behind casting shadows on objects infront
-OPTIMIZATION
+OPTIMIZATION - MULTITHREADING
 neater code and clearer comments
 
 uses ppm image format - to view ppm images you can downlaod them and view here:
@@ -16,13 +16,14 @@ or install a ppm capable program on your computer such as GIMP
 #include <fstream>
 #include <cmath>
 #include <vector>
+#include <sstream> // for video file naming only
 
 //to randomize reflection rays for diffusion
 #include <cstdlib>
 
 using namespace std;
 
-struct Sphere {int x; int y; int z; int rad; bool is_reflective; double r; double g; double b; bool floor; int diffusion;};
+struct Sphere {double x; int y; int z; int rad; bool is_reflective; double r; double g; double b; bool floor; int diffusion;};
 
 struct Coord {double x; double y; double z; bool exists; double dist;};
 
@@ -48,11 +49,11 @@ double intensity(Coord incident, Coord normal, bool reflective, bool floor);
 int main() 
 {
   //main image file
-  ofstream image("image.ppm");
+  
   
   //image dimensions
-  int image_height = 1080;//1080;//256;
-  int image_width = 1920;//1920;//480;
+  int image_height = 270;//1080;//256;
+  int image_width = 480;//1920;//480;
 
   //list of spheres
   vector<Sphere> spheres;
@@ -67,9 +68,24 @@ int main()
   // Sphere Sp3 = {1560, 540, 11100, 360, false, 0, 1, 0};
   // spheres.push_back(Sp3);
 
+double fps = 24.0;
+double seconds = 5.0;
+
+double ballx = 800.0;
+double change2;
+double change3;
+
+for (double i = 0.0; i < fps * seconds; i+= 1.0)
+{
+  stringstream number;
+  number << i;
+  string file = "images/image" + number.str() + ".ppm";
+  ofstream image(file);
+
+
   Sphere Sp1 = {0, 2000000, 0, 7000000, false, 0.4, 0.4, 0.4, true, 0};
   spheres.push_back(Sp1);
-  Sphere Sp2 = {0, 250, 900, 400, true, 1, 1, 0, false, 0};
+  Sphere Sp2 = {ballx, 250, 900, 400, true, 1, 1, 0, false, 0};
   spheres.push_back(Sp2);
   Sphere Sp3 = {-150, 540, 400, 60, false, 1, 1, 0, false, 0};
   spheres.push_back(Sp3);
@@ -85,13 +101,13 @@ int main()
   //spheres.push_back(Sp4);
 
 
-  double origin_x = 0;
-  double origin_y = 150;
-  double origin_z = -300;
+  double origin_x = 400;//400camerax * (i / fps* seconds) - 400.0;
+  double origin_y = 150;//150
+  double origin_z = -300;//-300
 
   //followes quadrant system where straight is 0
   //from 0-1 where 1 is 90 degrees
-  double angle_x = 0;
+  double angle_x = 1 - (1 / i);
   double angle_y = -0.2;
   //for 1080p
   // Sphere Sp1 = {1000, 500, 700, 375, 1, 0, 1};
@@ -110,7 +126,7 @@ int main()
   //x, y, z
   //Coord Li1 = {256, 256, 00, true};
   //light source
-  Coord Li1 = {0, -800, 100, true};
+  Coord Li1 = {ballx * (i / fps* seconds) - 300, -800, 100, true};
 
 
   //maximum reflections per ray
@@ -208,9 +224,9 @@ int main()
           if (ray_hit(Collision, Towards_light, spheres[i]).exists)
           {
             //if so, reduce the brightness
-            r *= 0.3;
-            g *= 0.3;
-            b *= 0.3;
+            r *= 0.4;
+            g *= 0.4;
+            b *= 0.4;
             shade = false;
             break;
           }
@@ -236,9 +252,9 @@ int main()
       }
       else //casted shadow
       {
-        r *= 0.3;
-        g *= 0.3;
-        b *= 0.3;
+        r *= 0.4;
+        g *= 0.4;
+        b *= 0.4;
       }
 
     } //not reflective close
@@ -279,9 +295,9 @@ int main()
           if (reflect_hit == -1)
           {
             double 
-            r = backr;
-            g = backg;
-            b = backb;
+            r = backr * 1.3;
+            g = backg * 1.3;
+            b = backb * 1.3;
             break;
           }
           else //does hit something
@@ -291,7 +307,7 @@ int main()
 
             if (spheres[reflect_hit].is_reflective)//hits reflective
             {
-              r=0;g=0;b=0;
+              
               initial = reflect_hit;
               Dir = Reflected_dir;
               Or = Collision;
@@ -339,9 +355,9 @@ int main()
               else
               {
                 //darken if shadows
-                r *= 0.3;
-                g *= 0.3;
-                b *= 0.3;
+                r *= 0.4;
+                g *= 0.4;
+                b *= 0.4;
               }
             }
           }
@@ -385,6 +401,7 @@ int main()
     }
   }
   image.close();
+  }
 }
 
 
