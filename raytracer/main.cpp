@@ -20,10 +20,11 @@ or install a ppm capable program on your computer such as GIMP
 
 //to randomize reflection rays for diffusion
 #include <cstdlib>
+int counter = 0;
 
 using namespace std;
 
-struct Sphere {double x; int y; int z; int rad; bool is_reflective; double r; double g; double b; bool floor; int diffusion;};
+struct Sphere {int x; int y; int z; int rad; bool is_reflective; double r; double g; double b; bool floor; int diffusion;};
 
 struct Coord {double x; double y; double z; bool exists; double dist;};
 
@@ -52,8 +53,8 @@ int main()
   
   
   //image dimensions
-  int image_height = 270;//1080;//256;
-  int image_width = 480;//1920;//480;
+  int image_height = 1080;//1080;//256;
+  int image_width = 1920;//1920;//480;
 
   //list of spheres
   vector<Sphere> spheres;
@@ -69,7 +70,7 @@ int main()
   // spheres.push_back(Sp3);
 
 double fps = 24.0;
-double seconds = 5.0;
+double seconds = 10.0;
 
 double ballx = 800.0;
 double change2;
@@ -77,15 +78,19 @@ double change3;
 
 for (double i = 0.0; i < fps * seconds; i+= 1.0)
 {
+
+  
+    cout << (i / (fps * seconds)) * 100 << "% Done! " << endl;
+  
   stringstream number;
   number << i;
   string file = "images/image" + number.str() + ".ppm";
   ofstream image(file);
 
 
-  Sphere Sp1 = {0, 2000000, 0, 7000000, false, 0.4, 0.4, 0.4, true, 0};
+  Sphere Sp1 = {0, 2000000, 0, 7000000, false, 0.35, 0.35, 0.35, true, 0};
   spheres.push_back(Sp1);
-  Sphere Sp2 = {ballx, 250, 900, 400, true, 1, 1, 0, false, 0};
+  Sphere Sp2 = {0, 250, 900, 400, true, 1, 1, 0, false, 0};
   spheres.push_back(Sp2);
   Sphere Sp3 = {-150, 540, 400, 60, false, 1, 1, 0, false, 0};
   spheres.push_back(Sp3);
@@ -101,13 +106,13 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
   //spheres.push_back(Sp4);
 
 
-  double origin_x = 400;//400camerax * (i / fps* seconds) - 400.0;
+  double origin_x = ballx/(fps*seconds)*i-400;//400camerax * (i / fps* seconds) - 400.0;
   double origin_y = 150;//150
   double origin_z = -300;//-300
 
   //followes quadrant system where straight is 0
   //from 0-1 where 1 is 90 degrees
-  double angle_x = 1 - (1 / i);
+  double angle_x = -(i/(fps*seconds))+0.5;
   double angle_y = -0.2;
   //for 1080p
   // Sphere Sp1 = {1000, 500, 700, 375, 1, 0, 1};
@@ -126,7 +131,7 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
   //x, y, z
   //Coord Li1 = {256, 256, 00, true};
   //light source
-  Coord Li1 = {ballx * (i / fps* seconds) - 300, -800, 100, true};
+  Coord Li1 = {ballx/(fps*seconds)*i-400, -800, 100, true};
 
 
   //maximum reflections per ray
@@ -146,8 +151,8 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
       //int y = 255;
       // //default or backround colours
       // //replace 0.5 with commented code for a gradient
-      float backr = 0.63;//double(x) / (image_height - 1);
-      float backg = 0.63;//double(y) / (image_height - 1);
+      float backr = double(x) / (image_width - 1);//0.63
+      float backg = double(y) / (image_height - 1);//0.63
       float backb = 0.63;
       
       float r = backr;
@@ -159,7 +164,7 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
       
       //define origin and direction of each ray from each pixel
       Coord Or = {origin_x, origin_y, origin_z, true};
-      Coord Dir = {(-(width / 2.0) + x * (width / image_width) + angle_x), (0.5 - (y * (1.0 / image_height)) - angle_y), 1.0, true};
+      Coord Dir = {(-(width / 2.0) + x * (width / image_width) + angle_x), (0.5 - (y * (1.0 / image_height)) - angle_y), 0.5, true};
 
   //check all spheres for interceptions
   //leave as initial value if not hit
@@ -191,6 +196,9 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
     r = backr;
     g = backg;
     b = backg;
+    counter ++;
+    //if (counter < 1)
+      //cout << r << ", " << g << ", " << b << endl;
   }
   else //get info on first sphere collision
   {
@@ -294,7 +302,7 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
           //if no reflection, reflect backround colour and break
           if (reflect_hit == -1)
           {
-            double 
+             
             r = backr * 1.3;
             g = backg * 1.3;
             b = backb * 1.3;
@@ -615,7 +623,7 @@ double intensity(Coord incident, Coord normal, bool reflective, bool floor)
   // cout << "angle << " << angle << endl;
    //calculate intensity
    //double intensity = (angle - 90) / 90;
-  int hard_shadow = 110;
+  double hard_shadow = 110.0;
   
   if (reflective)
   {
