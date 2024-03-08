@@ -1,15 +1,22 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
+using namespace std;
 
 int main()
 {
     for (int x = 0; x < 240; x++)
     {
-string file = "images/image" + i.str() + ".ppm";
-ifstream image(file);
+        stringstream v;
+        v << x;
+        string file = "images/image" + v.str() + ".ppm";
+        ifstream image(file);
+
+        string copy_file = "images2/copy_image" + v.str() + ".ppm";
+        ofstream copy_image(copy_file);
     
-    while (!image.EOF)
+    while (!image.eof())
     {
 
         string s;
@@ -27,7 +34,11 @@ ifstream image(file);
                 mods[i] = s[i];
             }
         }
+        cout << s << endl;
+        //cout << mods << endl;
+
     }
+    copy_image.close();
     image.close();
     }
 }
