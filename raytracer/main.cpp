@@ -76,7 +76,7 @@ double ballx = 800.0;
 double change2;
 double change3;
 
-for (double i = 0.0; i < fps * seconds; i+= 1.0)
+for (int i = 0.0; i < fps * seconds; i+= 1.0)
 {
 
   
@@ -84,7 +84,7 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
   
   stringstream number;
   number << i;
-  string file = "images/image" + number.str() + ".ppm";
+  string file = "images3/image" + number.str() + ".ppm";
   ofstream image(file);
 
 
@@ -112,8 +112,9 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
 
   //followes quadrant system where straight is 0
   //from 0-1 where 1 is 90 degrees
-  double angle_x = -(i/(fps*seconds))+0.5;
-  double angle_y = -0.2;
+  int angle_x = (int)(-(i/(fps*seconds)) + 0.5);
+  //double angle_x = -int((i/(fps*seconds)))+0.5;
+  int angle_y = 0;
   //for 1080p
   // Sphere Sp1 = {1000, 500, 700, 375, 1, 0, 1};
   // spheres.push_back(Sp1);
@@ -131,7 +132,7 @@ for (double i = 0.0; i < fps * seconds; i+= 1.0)
   //x, y, z
   //Coord Li1 = {256, 256, 00, true};
   //light source
-  Coord Li1 = {ballx/(fps*seconds)*i-400, -800, 100, true};
+  Coord Li1 = {int(ballx/(fps*seconds)*i-400), -800, 100, true};
 
 
   //maximum reflections per ray
